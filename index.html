@@ -7612,7 +7612,10 @@ document.getElementById('import-btn').addEventListener('click', openPasteDialog)
 
   // ===== AI分析 (Gemini) =====
   var GEMINI_KEY_LS = 'gemini_api_key_v1';
-  function getGeminiKey() { try { return localStorage.getItem(GEMINI_KEY_LS) || (window.GEMINI_API_KEY || ''); } catch(e){ return window.GEMINI_API_KEY || ''; } }
+  // プロキシ方式ではブラウザにキーを置かないが、各所の「キーが無ければ中断」ガードが
+  // この戻り値を見ている。呼び出しは常に可能なので番人用の印を返す。
+  var GEMINI_VIA_PROXY = 'via-proxy';
+  function getGeminiKey() { try { return localStorage.getItem(GEMINI_KEY_LS) || GEMINI_VIA_PROXY; } catch(e){ return GEMINI_VIA_PROXY; } }
   function setGeminiKey(k) { try { localStorage.setItem(GEMINI_KEY_LS, k); } catch(e){} }
 
   var AI_BENCHMARKS = {
@@ -7909,7 +7912,7 @@ document.getElementById('import-btn').addEventListener('click', openPasteDialog)
       window.onAIProviderChange();
     }
     var gkEl = document.getElementById('inp-gemini-key');
-    if (gkEl) gkEl.value = getGeminiKey();
+    if (gkEl) { var _gk = getGeminiKey(); gkEl.value = (_gk === GEMINI_VIA_PROXY) ? '' : _gk; }
     var gmEl = document.getElementById('sel-gemini-model');
     if (gmEl) { var sg = localStorage.getItem('gemini_model_v1'); if (sg && gmEl.querySelector('option[value="'+sg+'"]')) gmEl.value = sg; }
     var ckEl = document.getElementById('inp-claude-key');
