@@ -197,7 +197,7 @@ window.RIALT_DATA = {
 | 2026-03-17 | スキャンライン（横縞）削除 | — |
 | 2026-03-19 | 単月分析ワースト: 在庫メトリック追加（期末在庫・昨対比・回転率） | — |
 | 2026-03-20 | 公開モード（`?public`）実装 — TOP報告・設定・P1/P2・インポート・検索を非表示、data.js動的ロード | — |
-| 2026-03-20 | GitHub Pages デプロイ（trial-dx/rialt_dashboard）— `?public` URLで外部公開 | — |
+| 2026-03-20 | GitHub Pages デプロイ（trial-dx/dashboard）— `?public` URLで外部公開 | — |
 | 2026-03-20 | config.js 追加 — Gemini APIキーをファイルで管理、getGeminiKey()でlocalStorage→config.jsの順にフォールバック | — |
 | 2026-03-23 | SLドリルダウン修正 — データなし階層（不在等）も子が存在すれば表示・ドリル可能に | — |
 | 2026-03-24 | リゾートタブ用データ基盤構築 — TGR xlsx解析・フラットテーブル生成（旅館169列/ゴルフ169列）| — |
@@ -257,7 +257,7 @@ window.RIALT_DATA = {
 
 | 項目 | 内容 |
 |---|---|
-| URL | `https://trial-dx.github.io/rialt_dashboard/index.html?public` |
+| URL | `https://trial-dx.github.io/dashboard/index.html?public` |
 | フル版 | `index.html`（社内・自分用、全機能有効） |
 | 公開版 | `index.html?public`（RIALT+Tab2のみ、下記を非表示） |
 

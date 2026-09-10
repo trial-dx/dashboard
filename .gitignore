@@ -1,5 +1,12 @@
+# シークレット
+.env
+# Gemini APIキー。雛形は config.sample.js。
+# GitHub Pages 用は Actions がシークレットから生成する（.github/workflows/pages.yml）
+config.js
+
 # 社内限定データ（GitHub Pages にアップしない）
 data.js
+competitor_price/data/
 
 # Python スクリプト（パッチ作業用・一時ファイル）
 *.py

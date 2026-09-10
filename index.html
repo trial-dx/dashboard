@@ -5382,9 +5382,9 @@ body {
         <div class="setting-row">
           <span class="setting-label">GEMINI MODEL</span>
           <select class="setting-select" id="sel-gemini-model" style="width:220px;font-size:11px;">
-            <option value="gemini-2.5-flash">gemini-2.5-flash（推奨・安定版）</option>
-            <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite（軽量・高速）</option>
-            <option value="gemini-2.0-flash">gemini-2.0-flash（旧バージョン）</option>
+            <option value="gemini-3.1-flash-lite">gemini-3.1-flash-lite（推奨・全社標準）</option>
+            <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite（新しめ・やや高価）</option>
+            <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite（最安・旧世代）</option>
           </select>
         </div>
       </div>
@@ -5453,9 +5453,10 @@ body {
 <script src="tgr_facts.js"></script>
 <script src="price_data.js"></script>
 <script>
-// Shared Gemini API key — works on all origins (local file:// and GitHub Pages)
-// To update: open this file in a text editor, search for PASTE_YOUR_KEY_HERE, replace with your key
-window.GEMINI_API_KEY = 'AIzaSyDJmJdJdBysD8G9Fh0_1STkyBYXBg3oQVE';
+// Gemini API キーはこのファイルにも、このリポジトリのどこにも置かない。
+// AI 呼び出しは dashboard-ai-proxy（Vercel）経由で行い、キーはその環境変数だけに存在する。
+// 実装は callGeminiAPI / callGeminiAPIText、送信先は AI_PROXY_URL。
+// 2026-09-10: 旧方式（キーを直書き）は Google の流出検知で 2 本とも遮断されたため廃止。
 
 'use strict';
 
@@ -7673,25 +7674,37 @@ document.getElementById('import-btn').addEventListener('click', openPasteDialog)
     return p;
   }
 
-  async function callGeminiAPI(prompt, apiKey) {
-    var _validModels = ['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash'];
+  // ── AI プロキシ ────────────────────────────────────────────────
+  // Gemini は dashboard-ai-proxy 経由で呼ぶ。APIキーはブラウザに存在せず、
+  // Vercel 側の環境変数だけに置く。公開リポジトリ・公開サイトの双方にキーは無い。
+  var AI_PROXY_URL = 'https://dashboard-ai-proxy-six.vercel.app/api/gemini';
+
+  function _pickGeminiModel() {
+    // プロキシが許可しているモデルのみ。2026-09-10 に新キーで実呼び出し確認済み。
+    var _valid = ['gemini-3.1-flash-lite','gemini-3.5-flash-lite','gemini-2.5-flash-lite'];
     var _saved = (function(){ try { return localStorage.getItem('gemini_model_v1') || ''; } catch(e){ return ''; } })();
-    var _model = _validModels.indexOf(_saved) >= 0 ? _saved : 'gemini-2.5-flash';
-    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + _model + ':generateContent?key=' + encodeURIComponent(apiKey);
-    var resp = await fetch(url, {
+    return _valid.indexOf(_saved) >= 0 ? _saved : 'gemini-3.1-flash-lite';
+  }
+
+  async function _callAIProxy(body) {
+    body.model = _pickGeminiModel();
+    var resp = await fetch(AI_PROXY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents:[{parts:[{text:prompt}]}],
-        generationConfig:{
-          temperature:0.4, maxOutputTokens:8192,
-          responseMimeType:'application/json'
-        }
-      })
+      body: JSON.stringify(body)
     });
-    if (!resp.ok) { var e = await resp.text(); throw new Error(resp.status+': '+e.slice(0,200)); }
-    var data = await resp.json();
-    return data.candidates[0].content.parts[0].text;
+    var data = null;
+    try { data = await resp.json(); } catch(e) {}
+    if (!resp.ok) {
+      var msg = (data && data.error) ? String(data.error) : '応答を解釈できませんでした';
+      throw new Error(resp.status + ': ' + msg.slice(0,200));
+    }
+    return (data && data.text) || '';
+  }
+
+  // apiKey 引数は呼び出し元の互換のため残しているが、使わない。
+  async function callGeminiAPI(prompt, apiKey) {
+    return await _callAIProxy({ prompt: prompt, temperature: 0.4, maxOutputTokens: 8192, json: true });
   }
 
   function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -7804,20 +7817,9 @@ document.getElementById('import-btn').addEventListener('click', openPasteDialog)
 
   // チャット用プレーンテキスト版（JSONラップしない）
   async function callGeminiAPIText(prompt, apiKey, systemPrompt) {
-    var _validModels = ['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash'];
-    var _saved = (function(){ try { return localStorage.getItem('gemini_model_v1') || ''; } catch(e){ return ''; } })();
-    var _model = _validModels.indexOf(_saved) >= 0 ? _saved : 'gemini-2.5-flash';
-    var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + _model + ':generateContent?key=' + encodeURIComponent(apiKey);
-    var _body = { contents:[{parts:[{text:prompt}]}], generationConfig:{ temperature:0.5, maxOutputTokens:16384 } };
-    if (systemPrompt) _body.systemInstruction = { parts:[{ text: systemPrompt }] };
-    var resp = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(_body)
-    });
-    if (!resp.ok) { var e = await resp.text(); throw new Error(resp.status+': '+e.slice(0,200)); }
-    var data = await resp.json();
-    var _cand=(data.candidates||[])[0]||{};var _con=_cand.content||{};var _parts=_con.parts||[];return (_parts[0]||{}).text||'';
+    var _b = { prompt: prompt, temperature: 0.5, maxOutputTokens: 16384 };
+    if (systemPrompt) _b.systemPrompt = systemPrompt;
+    return await _callAIProxy(_b);
   }
 
   async function callClaudeAPIText(prompt, apiKey, systemPrompt) {
