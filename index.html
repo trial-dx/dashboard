@@ -11371,7 +11371,9 @@ document.getElementById('import-btn').addEventListener('click', openPasteDialog)
         setTimeout(function() { fetchGasPlFull_(ym); }, 2000 + idx * 5000);
       });
     })();
-    initTgrSubTabs();
+    // initTgrSubTabs() は削除済み機能の呼び出しが残っていたもの。TGRにサブタブUIは無い。
+    // 未定義のまま呼ばれて ReferenceError となり、以降の renderTgrKpiBanner() と
+    // GASキャッシュ自動取得を巻き添えで止めていた（2026-09-10 除去）。
     renderTgrKpiBanner();
     // TGRタブ初回表示時にGASキャッシュを自動取得（バックグラウンド）
     setTimeout(function() { autoFetchGasCache_(false); }, 500);
